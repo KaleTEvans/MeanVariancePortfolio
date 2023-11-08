@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime
+import numpy as np
 
 from StockStatistics import StockStatistics
 
@@ -40,7 +41,16 @@ for stock, stats in mean_variance.items():
 
 mean_vector = stock_stats.get_mean_vector()
 
-print(mean_vector)
+# print(mean_vector)
 
-cov_matrix = stock_stats.get_cov_matrix()
-print(cov_matrix)
+# cov_matrix = stock_stats.get_cov_matrix()
+# print(cov_matrix)
+
+annual_cov_matrix = stock_stats.get_annualized_cov_matrix()
+print(annual_cov_matrix)
+
+gm_values = stock_stats.get_global_min_variance_values(annual_cov_matrix, True)
+print("Weight Vector: ", gm_values['weights'])
+print("Expected Return: ", gm_values['return'])
+print("Variance: ", gm_values['variance'])
+print("Volaitlity: ", gm_values['volatility'])
