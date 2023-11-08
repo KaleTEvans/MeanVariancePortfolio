@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 
 class StockStatistics:
@@ -116,13 +117,11 @@ class StockStatistics:
                 stock2 = stock_names[j]
                 if i == j:
                     annual_cov_matrix[i, j] = self.stock_statistics[stock1]['annual_variance']
-                else : # Covariance is also equal to correlation * stdev1 * stdev2, so we must find rho from the daily values
+                else :
                     mean1 = self.stock_statistics[stock1]['mean']
                     mean2 = self.stock_statistics[stock2]['mean']
                     var1 = self.stock_statistics[stock1]['variance']
                     var2 = self.stock_statistics[stock2]['variance']
-                    stdev1 = math.sqrt(var1)
-                    stdev2 = math.sqrt(var2)
 
                     # Now the formula for annual covariance is a little trickier
                     daily_covariance = self.calculate_covariance(stock1, stock2)
@@ -132,7 +131,7 @@ class StockStatistics:
 
         return annual_cov_matrix
     
-    def get_global_min_variance_values(self, cov_matrix, annual):
+    def get_global_min_variance_values(self, cov_matrix, annual=True):
         # First find the weights vector
         n = cov_matrix.shape[0]
         ones_vector = np.ones(n)
@@ -147,7 +146,6 @@ class StockStatistics:
         # Then get the expected return from the annual mean
         if annual is True:
             gm_mean = self.get_annual_mean_vector()
-
         else:
             gm_mean = self.get_mean_vector()
 
@@ -158,11 +156,46 @@ class StockStatistics:
         # Take square root to get stdev ie volatility
         gm_volatility = math.sqrt(gm_variance)
 
+        # Determine psi for target mean and variance
+        term1 = ones_vector.T @ inversed_cov_matrix @ ones_vector
+        term2 = gm_mean.T @ inversed_cov_matrix @ gm_mean
+        term3 = ones_vector.T @ inversed_cov_matrix @ gm_mean
+        psi =  (term1 * term2) - (term3 ** 2)
+
         gm_values = {
             'weights' : gm_weights,
             'return' : expected_return,
             'variance' : gm_variance,
-            'volatility' : gm_volatility
+            'volatility' : gm_volatility,
+            'psi' : psi
         }
 
         return gm_values
+    
+    def get_target_stdev(self, gm_values, target_return):
+        target_variance = (gm_values['variance']) + (((target_return - gm_values['return']) ** 2) / (gm_values['psi'] * gm_values['variance']))
+        target_stdev = math.sqrt(target_variance)
+        return target_stdev
+    
+    def plot_mean_variance_curve(self, gm_values):
+        # Define the range of target returns
+        target_returns = np.linspace(-1.1, 1.1, 100)
+
+        # Calculate the target stdev
+        target_stdev = np.array([self.get_target_stdev(gm_values, tr) for tr in target_returns])
+
+        # Plot the efficient frontier
+        plt.figure(figsize=(10, 6))
+        plt.plot(target_stdev, target_returns, label='Efficient Frontier')
+
+        # Plot the individual stocks' volatility and return
+        for stock, stats in self.stock_statistics.items():
+            plt.scatter(np.sqrt(stats['annual_variance']), stats['annual_mean'], label=f"{stock} (Stock)")
+
+        # Additional plot settings
+        plt.title('Mean-Variance Efficient Frontier')
+        plt.xlabel('Volatility (Standard Deviation)')
+        plt.ylabel('Expected Return')
+        plt.legend()
+        plt.grid(True)
+        plt.show()

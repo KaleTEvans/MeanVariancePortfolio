@@ -38,6 +38,8 @@ for stock, stats in mean_variance.items():
     print(f"Stock: {stock}")
     print(f"  Mean Return: {stats['mean']:.8f}")
     print(f"  Variance of Return: {stats['variance']:.8f}")
+    print(f"  Annual Mean Return: {stats['annual_mean']:.8f}")
+    print(f"  Annual Variance of Return: {stats['annual_variance']:.8f}")
 
 mean_vector = stock_stats.get_mean_vector()
 
@@ -49,8 +51,11 @@ mean_vector = stock_stats.get_mean_vector()
 annual_cov_matrix = stock_stats.get_annualized_cov_matrix()
 print(annual_cov_matrix)
 
-gm_values = stock_stats.get_global_min_variance_values(annual_cov_matrix, True)
+gm_values = stock_stats.get_global_min_variance_values(annual_cov_matrix)
 print("Weight Vector: ", gm_values['weights'])
 print("Expected Return: ", gm_values['return'])
 print("Variance: ", gm_values['variance'])
 print("Volaitlity: ", gm_values['volatility'])
+print("Psi", gm_values['psi'])
+
+stock_stats.plot_mean_variance_curve(gm_values)
