@@ -157,9 +157,9 @@ class StockStatistics:
         gm_volatility = math.sqrt(gm_variance)
 
         # Determine psi for target mean and variance
-        term1 = ones_vector.T @ inversed_cov_matrix @ ones_vector
-        term2 = gm_mean.T @ inversed_cov_matrix @ gm_mean
-        term3 = ones_vector.T @ inversed_cov_matrix @ gm_mean
+        term1 = ones_vector.T @ inversed_cov_matrix @ ones_vector # Labeled PsiA
+        term2 = gm_mean.T @ inversed_cov_matrix @ gm_mean # Labeled PsiC
+        term3 = ones_vector.T @ inversed_cov_matrix @ gm_mean # Labeled PsiB
         psi =  (term1 * term2) - (term3 ** 2)
 
         gm_values = {
@@ -167,10 +167,38 @@ class StockStatistics:
             'return' : expected_return,
             'variance' : gm_variance,
             'volatility' : gm_volatility,
-            'psi' : psi
+            'psi' : psi,
+            'psi_A' : term1,
+            'psi_B' : term3,
+            'psi_C' : term2
         }
 
         return gm_values
+    
+    def find_weights_from_target_return(self, cov_matrix, gm_values, target):
+        # The formula to determine the weighting for a target return is the soluition to the Markowitz problem
+        mean_vector = self.get_annual_mean_vector()
+        psi = gm_values['psi']
+
+        psi_A = gm_values['psi_A']
+        psi_B = gm_values['psi_B']
+        psi_C = gm_values['psi_C']
+
+        # Solve for the lagrange multipliers below
+        lambda_one = (psi_B * target - psi_C) / psi
+        lambda_two = (psi_B - (psi_A * target)) / psi
+
+        # get the inversed cov matrix
+        inversed_cov_matrix = np.linalg.inv(cov_matrix)
+
+        n = cov_matrix.shape[0]
+        ones_vector = np.ones(n)
+
+        term1 = lambda_one * (inversed_cov_matrix @ ones_vector)
+        term2 = lambda_two * (inversed_cov_matrix @ mean_vector)
+
+        return (-term1 - term2)
+
     
     def get_target_stdev(self, gm_values, target_return):
         target_variance = (gm_values['variance']) + (((target_return - gm_values['return']) ** 2) / (gm_values['psi'] * gm_values['variance']))
